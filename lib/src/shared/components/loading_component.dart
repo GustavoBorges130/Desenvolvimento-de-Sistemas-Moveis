@@ -16,7 +16,8 @@ class LoadingComponent extends StatelessWidget {
   Widget build(BuildContext context) {
     return Positioned.fill(
       child: AbsorbPointer(
-        child: ColoredBox(
+        child: Material(
+          key: const Key('loadingComponent'),
           color: AppColors.overlay,
           child: Center(
             child: Container(

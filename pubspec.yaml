@@ -44,3 +44,11 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+# O map_launcher 2.x (versão pedida no desafio) ainda usa a API de plugins
+# "v1 embedding" do Android (PluginRegistry.Registrar), removida do Flutter
+# na versão 3.29; com ela o app não compila para Android. A 4.6.0 é a versão
+# mais recente com a mesma API usada no projeto (MapLauncher.installedMaps,
+# AvailableMap.showDirections e Coords) e já compatível com o Gradle atual.
+dependency_overrides:
+  map_launcher: ^4.6.0

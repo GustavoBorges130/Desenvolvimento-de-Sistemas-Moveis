@@ -476,10 +476,10 @@ packages:
     dependency: "direct main"
     description:
       name: map_launcher
-      sha256: "4db9f2878dd0764f476f613eda671b969084960b6ae81bf578699cfe03e58ce0"
+      sha256: "340e15281d3367afa0927070533f04f704c2802d4afa74149c2bf8e4b71c947e"
       url: "https://pub.dev"
     source: hosted
-    version: "2.5.0+1"
+    version: "4.6.0"
   matcher:
     dependency: transitive
     description:
