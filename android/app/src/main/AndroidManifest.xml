@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Consulta à API ViaCEP e geocodificação do endereço. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:label="FastLocation"
         android:name="${applicationName}"
