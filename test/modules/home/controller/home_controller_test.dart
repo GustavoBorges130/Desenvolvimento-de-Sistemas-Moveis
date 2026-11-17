@@ -1,3 +1,6 @@
+// Testes do HomeController (MobX): estados de loading, último endereço,
+// não encontrado, erro (via reação) e resultados da busca por endereço.
+
 import 'package:fast_location/src/modules/home/controller/home_controller.dart';
 import 'package:fast_location/src/modules/home/model/address_exceptions.dart';
 import 'package:fast_location/src/modules/home/service/address_service.dart';

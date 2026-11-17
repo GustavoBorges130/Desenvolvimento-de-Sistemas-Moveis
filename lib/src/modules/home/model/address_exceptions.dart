@@ -1,9 +1,19 @@
+// =============================================================================
+// Passo 05 do desafio - módulo Home, diretório model:
+// erros conhecidos das consultas de endereço.
+// =============================================================================
+
 /// Erros conhecidos das consultas de endereço.
 ///
 /// Cada erro carrega uma mensagem pronta para ser exibida ao entregador.
+///
+/// A classe é `sealed`: só pode ser estendida neste arquivo. Assim o
+/// controller sabe exatamente quais erros podem acontecer e trata cada um
+/// com um `on ... catch`.
 sealed class AddressException implements Exception {
   const AddressException(this.message);
 
+  /// Texto exibido na tela.
   final String message;
 
   @override
@@ -23,6 +33,9 @@ class InvalidAddressSearchException extends AddressException {
 }
 
 /// A consulta foi feita, mas a API não encontrou o CEP/endereço.
+///
+/// Esse caso é exibido pelo componente de busca vazia ("Endereço não
+/// encontrado"), e não como mensagem de erro.
 class AddressNotFoundException extends AddressException {
   const AddressNotFoundException([
     super.message = 'Não encontramos nenhum endereço para o CEP informado.',

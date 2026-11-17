@@ -1,3 +1,7 @@
+// Testes do AddressLocalRepository com o Hive de verdade, gravando numa
+// pasta temporária. Confirmam que o adapter gerado pelo hive_generator
+// salva e lê os endereços corretamente.
+
 import 'dart:io';
 
 import 'package:fast_location/src/modules/home/model/address_model.dart';

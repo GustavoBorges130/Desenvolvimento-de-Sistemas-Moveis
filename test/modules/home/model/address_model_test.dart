@@ -1,3 +1,6 @@
+// Testes do AddressModel: conversão do JSON da ViaCEP e textos exibidos
+// nas telas (CEP formatado, endereço completo, data da consulta).
+
 import 'package:fast_location/src/modules/home/model/address_model.dart';
 import 'package:flutter_test/flutter_test.dart';
 

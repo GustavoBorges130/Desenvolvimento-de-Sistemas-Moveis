@@ -1,3 +1,7 @@
+// Dublês (fakes) usados nos testes: substituem a API ViaCEP, o Hive e o
+// geocoding por versões em memória, para os testes rodarem sem internet e
+// com resultados previsíveis.
+
 import 'package:fast_location/src/modules/home/model/address_exceptions.dart';
 import 'package:fast_location/src/modules/home/model/address_model.dart';
 import 'package:fast_location/src/modules/home/repositories/address_local_repository.dart';

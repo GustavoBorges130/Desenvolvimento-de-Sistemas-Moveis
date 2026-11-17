@@ -1,3 +1,6 @@
+// Testes do AddressRepository (API ViaCEP). O Dio usa um adaptador falso,
+// que responde sem acessar a internet, para simular cada retorno da API.
+
 import 'dart:convert';
 import 'dart:typed_data';
 

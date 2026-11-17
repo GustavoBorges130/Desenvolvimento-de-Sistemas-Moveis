@@ -1,3 +1,7 @@
+// Testes de widget das telas: abertura com redirecionamento, home (busca
+// vazia, consulta por CEP, máscara, não encontrado, erro, busca por endereço)
+// e histórico.
+
 import 'package:fast_location/src/modules/history/controller/history_controller.dart';
 import 'package:fast_location/src/modules/history/page/history_page.dart';
 import 'package:fast_location/src/modules/home/controller/home_controller.dart';

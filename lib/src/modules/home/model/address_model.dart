@@ -1,7 +1,15 @@
+// =============================================================================
+// Passo 05 do desafio - módulo Home, diretório model:
+// "criar classe para definir estrutura de dados para retorno da consulta da
+// api externa (https://viacep.com.br/ws)".
+// =============================================================================
+
 import 'package:hive/hive.dart';
 
 import '../../../shared/storage/storage_keys.dart';
 
+// Arquivo gerado pelo hive_generator (comando build_runner) com o
+// AddressModelAdapter, que sabe gravar e ler esta classe no Hive.
 part 'address_model.g.dart';
 
 /// Estrutura de dados retornada pela API ViaCEP (https://viacep.com.br/ws).
@@ -28,6 +36,10 @@ part 'address_model.g.dart';
 ///
 /// A classe também é persistida no Hive (histórico de consultas). Por isso,
 /// além dos campos da API, guarda a data em que o endereço foi consultado.
+///
+/// `@HiveType` marca a classe para o hive_generator e `@HiveField(n)` marca
+/// cada campo gravado. O número de cada campo não pode mudar depois que o
+/// app estiver em uso, senão os dados já salvos deixam de ser lidos.
 @HiveType(typeId: HiveTypeIds.address)
 class AddressModel {
   const AddressModel({
@@ -47,7 +59,12 @@ class AddressModel {
     this.consultedAt,
   });
 
+  /// Cria o modelo a partir do JSON devolvido pela ViaCEP.
+  ///
+  /// Campos ausentes ou nulos viram texto vazio, então o restante do app
+  /// não precisa tratar `null` em cada campo.
   factory AddressModel.fromJson(Map<String, dynamic> json) {
+    // Função auxiliar: lê a chave, troca null por '' e remove espaços.
     String read(String key) => (json[key] ?? '').toString().trim();
 
     return AddressModel(
@@ -67,49 +84,72 @@ class AddressModel {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Campos da API ViaCEP
+  // `defaultValue` é usado pelo adapter quando o campo não existe no registro
+  // salvo (por exemplo, dados gravados por uma versão anterior do app).
+  // ---------------------------------------------------------------------------
+
+  /// CEP no formato devolvido pela API (ex.: 01001-000).
   @HiveField(0, defaultValue: '')
   final String cep;
 
+  /// Rua, avenida, praça etc.
   @HiveField(1, defaultValue: '')
   final String logradouro;
 
+  /// Complemento do CEP (ex.: "lado ímpar", "até 389/390").
   @HiveField(2, defaultValue: '')
   final String complemento;
 
+  /// Unidade dos Correios, quando o CEP é de uma agência ou caixa postal.
   @HiveField(3, defaultValue: '')
   final String unidade;
 
   @HiveField(4, defaultValue: '')
   final String bairro;
 
+  /// Cidade.
   @HiveField(5, defaultValue: '')
   final String localidade;
 
+  /// Sigla do estado (ex.: SP).
   @HiveField(6, defaultValue: '')
   final String uf;
 
+  /// Nome do estado (ex.: São Paulo).
   @HiveField(7, defaultValue: '')
   final String estado;
 
+  /// Região do país (ex.: Sudeste).
   @HiveField(8, defaultValue: '')
   final String regiao;
 
+  /// Código do município no IBGE.
   @HiveField(9, defaultValue: '')
   final String ibge;
 
+  /// Código GIA (usado em São Paulo).
   @HiveField(10, defaultValue: '')
   final String gia;
 
+  /// DDD telefônico da cidade.
   @HiveField(11, defaultValue: '')
   final String ddd;
 
+  /// Código do município no SIAFI.
   @HiveField(12, defaultValue: '')
   final String siafi;
+
+  // ---------------------------------------------------------------------------
+  // Campo próprio do app (não vem da API)
+  // ---------------------------------------------------------------------------
 
   /// Momento em que o endereço foi consultado no aparelho.
   @HiveField(13)
   final DateTime? consultedAt;
 
+  /// Converte de volta para o formato JSON da API (sem a data da consulta).
   Map<String, dynamic> toJson() => {
         'cep': cep,
         'logradouro': logradouro,
@@ -126,6 +166,10 @@ class AddressModel {
         'siafi': siafi,
       };
 
+  /// Cria uma cópia do endereço trocando a data da consulta.
+  ///
+  /// Os campos são `final` (imutáveis), então para "alterar" um endereço o
+  /// app cria um novo objeto com o valor desejado.
   AddressModel copyWith({DateTime? consultedAt}) {
     return AddressModel(
       cep: cep,
@@ -144,6 +188,10 @@ class AddressModel {
       consultedAt: consultedAt ?? this.consultedAt,
     );
   }
+
+  // ---------------------------------------------------------------------------
+  // Textos prontos para exibir nas telas
+  // ---------------------------------------------------------------------------
 
   /// CEP somente com números (ex.: 01001000). Usado como chave no Hive.
   String get cepDigits => cep.replaceAll(RegExp(r'\D'), '');
@@ -174,12 +222,19 @@ class AddressModel {
   String get formattedConsultedAt {
     final date = consultedAt;
     if (date == null) return '';
+    // Completa com zero à esquerda: 7 -> "07".
     String two(int value) => value.toString().padLeft(2, '0');
     return '${two(date.day)}/${two(date.month)}/${date.year} '
         'às ${two(date.hour)}:${two(date.minute)}';
   }
 
   static bool _isFilled(String value) => value.trim().isNotEmpty;
+
+  // ---------------------------------------------------------------------------
+  // Igualdade
+  // Dois endereços são iguais quando têm o mesmo CEP, logradouro e
+  // complemento, mesmo que tenham sido consultados em datas diferentes.
+  // ---------------------------------------------------------------------------
 
   @override
   bool operator ==(Object other) =>

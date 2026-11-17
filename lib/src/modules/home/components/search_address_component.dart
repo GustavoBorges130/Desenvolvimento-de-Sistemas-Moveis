@@ -1,3 +1,9 @@
+// =============================================================================
+// Passo 05 do desafio - módulo Home, diretório components.
+// Resultado esperado: "componente com campos para consulta de CEP".
+// Também atende à busca de CEP por endereço completo ou parcial.
+// =============================================================================
+
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -9,13 +15,18 @@ import '../service/address_service.dart';
 enum SearchType { cep, address }
 
 /// Dados preenchidos no formulário de nova consulta.
+///
+/// Tem dois construtores, um para cada tipo de consulta, para não misturar
+/// os campos de uma com os da outra.
 class AddressSearchRequest {
+  /// Consulta do endereço de um CEP.
   const AddressSearchRequest.byCep(this.cep)
       : type = SearchType.cep,
         uf = '',
         city = '',
         street = '';
 
+  /// Busca do CEP de um endereço (UF, cidade e logradouro).
   const AddressSearchRequest.byAddress({
     required this.uf,
     required this.city,
@@ -35,6 +46,9 @@ class AddressSearchRequest {
 /// Permite consultar o endereço de um CEP ou buscar o CEP de um endereço
 /// completo ou parcial (UF, cidade e logradouro). Ao confirmar, fecha o
 /// bottom sheet devolvendo um [AddressSearchRequest].
+///
+/// O componente só coleta os dados; quem faz a consulta é o controller,
+/// chamado pela HomePage.
 class SearchAddressComponent extends StatefulWidget {
   const SearchAddressComponent({super.key});
 
@@ -43,6 +57,7 @@ class SearchAddressComponent extends StatefulWidget {
   static Future<AddressSearchRequest?> show(BuildContext context) {
     return showModalBottomSheet<AddressSearchRequest>(
       context: context,
+      // Permite que o formulário suba junto com o teclado.
       isScrollControlled: true,
       useSafeArea: true,
       showDragHandle: true,
@@ -56,23 +71,33 @@ class SearchAddressComponent extends StatefulWidget {
 }
 
 class _SearchAddressComponentState extends State<SearchAddressComponent> {
+  /// Chave do formulário, usada para validar todos os campos de uma vez.
   final _formKey = GlobalKey<FormState>();
+
+  // Controladores que guardam o texto digitado em cada campo.
   final _cepController = TextEditingController();
   final _cityController = TextEditingController();
   final _streetController = TextEditingController();
 
+  /// Aba selecionada: "Por CEP" ou "Por endereço".
   SearchType _type = SearchType.cep;
+
+  /// UF escolhida na lista.
   String? _uf;
 
   @override
   void dispose() {
+    // Libera os controladores de texto ao fechar o formulário.
     _cepController.dispose();
     _cityController.dispose();
     _streetController.dispose();
     super.dispose();
   }
 
+  /// Valida o formulário e devolve os dados para a HomePage.
   void _submit() {
+    // validate() executa o `validator` de cada campo; se algum devolver
+    // uma mensagem, ela aparece embaixo do campo e a consulta não segue.
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     final request = _type == SearchType.cep
@@ -83,14 +108,17 @@ class _SearchAddressComponentState extends State<SearchAddressComponent> {
             street: _streetController.text,
           );
 
+    // Fecha o bottom sheet devolvendo os dados preenchidos.
     Navigator.of(context).pop(request);
   }
 
+  /// O CEP precisa ter 8 números (a máscara já impede letras).
   String? _validateCep(String? value) {
     if (AddressService.isValidCep(value ?? '')) return null;
     return 'Digite os 8 números do CEP';
   }
 
+  /// Cidade e logradouro precisam de pelo menos 3 letras (regra da ViaCEP).
   String? _validateMinLength(String? value, String field) {
     final text = (value ?? '').trim();
     if (text.length >= AddressService.minSearchLength) return null;
@@ -100,6 +128,8 @@ class _SearchAddressComponentState extends State<SearchAddressComponent> {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+
+    // Altura do teclado aberto; usada para o formulário não ficar escondido.
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
 
     return Padding(
@@ -116,6 +146,7 @@ class _SearchAddressComponentState extends State<SearchAddressComponent> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Título e explicação, que muda conforme a aba escolhida.
               Text(
                 'Nova consulta',
                 style: textTheme.titleLarge?.copyWith(
@@ -134,6 +165,8 @@ class _SearchAddressComponentState extends State<SearchAddressComponent> {
                 ),
               ),
               const SizedBox(height: AppMetrics.spaceL),
+
+              // Abas para escolher o tipo de consulta.
               SegmentedButton<SearchType>(
                 segments: const [
                   ButtonSegment(
@@ -149,17 +182,22 @@ class _SearchAddressComponentState extends State<SearchAddressComponent> {
                 ],
                 selected: {_type},
                 onSelectionChanged: (selection) {
+                  // setState redesenha o formulário com os campos da aba.
                   setState(() => _type = selection.first);
                 },
               ),
               const SizedBox(height: AppMetrics.spaceL),
+
               if (_type == SearchType.cep)
+                // ----- Consulta por CEP -----
                 TextFormField(
                   key: const Key('cepField'),
                   controller: _cepController,
                   autofocus: true,
+                  // Abre o teclado numérico.
                   keyboardType: TextInputType.number,
                   textInputAction: TextInputAction.search,
+                  // Aplica a máscara 00000-000 enquanto digita.
                   inputFormatters: [CepInputFormatter()],
                   decoration: const InputDecoration(
                     labelText: 'CEP',
@@ -167,9 +205,12 @@ class _SearchAddressComponentState extends State<SearchAddressComponent> {
                     prefixIcon: Icon(Icons.pin_drop_outlined),
                   ),
                   validator: _validateCep,
+                  // Botão "pesquisar" do teclado também envia o formulário.
                   onFieldSubmitted: (_) => _submit(),
                 )
               else ...[
+                // ----- Busca por endereço -----
+                // Lista com as 27 UFs.
                 DropdownButtonFormField<String>(
                   key: const Key('ufField'),
                   initialValue: _uf,
@@ -189,6 +230,7 @@ class _SearchAddressComponentState extends State<SearchAddressComponent> {
                 TextFormField(
                   key: const Key('cityField'),
                   controller: _cityController,
+                  // Primeira letra de cada palavra em maiúscula.
                   textCapitalization: TextCapitalization.words,
                   textInputAction: TextInputAction.next,
                   decoration: const InputDecoration(
@@ -215,6 +257,8 @@ class _SearchAddressComponentState extends State<SearchAddressComponent> {
                 ),
               ],
               const SizedBox(height: AppMetrics.spaceXL),
+
+              // Botão que valida e envia o formulário.
               FilledButton.icon(
                 key: const Key('searchButton'),
                 onPressed: _submit,
@@ -230,19 +274,25 @@ class _SearchAddressComponentState extends State<SearchAddressComponent> {
 }
 
 /// Aplica a máscara 00000-000 enquanto o CEP é digitado.
+///
+/// Um TextInputFormatter recebe o texto antigo e o novo a cada tecla e
+/// devolve o texto que deve aparecer no campo.
 class CepInputFormatter extends TextInputFormatter {
   @override
   TextEditingValue formatEditUpdate(
     TextEditingValue oldValue,
     TextEditingValue newValue,
   ) {
+    // Mantém só os números e no máximo 8 dígitos.
     var digits = newValue.text.replaceAll(RegExp(r'\D'), '');
     if (digits.length > 8) digits = digits.substring(0, 8);
 
+    // Coloca o hífen depois do 5º dígito.
     final text = digits.length > 5
         ? '${digits.substring(0, 5)}-${digits.substring(5)}'
         : digits;
 
+    // Deixa o cursor no fim do texto.
     return TextEditingValue(
       text: text,
       selection: TextSelection.collapsed(offset: text.length),

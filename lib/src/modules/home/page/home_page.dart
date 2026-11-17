@@ -1,3 +1,13 @@
+// =============================================================================
+// Passo 05 do desafio - módulo Home, diretório page:
+// "criar classe com gerenciamento de estado:
+//  - usar o controller previamente criado;
+//  - usar o widget Observer do MobX Flutter, para usar a reatividade na tela;
+//  - usar reações do MobX para cenários de erros nas consultas;
+//  - implementar ações para: nova consulta; acesso ao histórico de consultas
+//    (nova página); traçar a rota com o último endereço consultado."
+// =============================================================================
+
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:map_launcher/map_launcher.dart';
 import 'package:material_ui/material_ui.dart';
@@ -35,6 +45,10 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  /// Controller (store do MobX) da tela.
+  ///
+  /// Monta a cadeia de dependências: repositórios -> service -> controller.
+  /// `late final` faz a criação acontecer só no primeiro uso.
   late final HomeController controller = widget.controller ??
       HomeController(
         AddressService(
@@ -44,12 +58,16 @@ class _HomePageState extends State<HomePage> {
         ),
       );
 
+  /// Funções que desligam as reações do MobX quando a tela é fechada.
   final List<ReactionDisposer> _disposers = [];
 
   @override
   void initState() {
     super.initState();
 
+    // Reações do MobX: executam um efeito (mostrar aviso, abrir lista)
+    // sempre que o valor observado muda. Diferente do Observer, elas não
+    // redesenham widgets; servem para ações pontuais na tela.
     _disposers.addAll([
       // Erros das consultas viram um aviso na parte de baixo da tela.
       reaction<String?>((_) => controller.errorMessage, _showError),
@@ -60,18 +78,28 @@ class _HomePageState extends State<HomePage> {
       ),
     ]);
 
+    // Carrega o histórico salvo no aparelho ao abrir a tela.
     controller.loadData();
   }
 
   @override
   void dispose() {
+    // Desliga as reações para não continuarem rodando depois que a tela
+    // foi fechada.
     for (final dispose in _disposers) {
       dispose();
     }
     super.dispose();
   }
 
+  // ---------------------------------------------------------------------------
+  // Efeitos das reações
+  // ---------------------------------------------------------------------------
+
+  /// Mostra o erro da consulta em um SnackBar vermelho.
   void _showError(String? message) {
+    // A reação também dispara quando o erro é limpo (null); nesse caso não
+    // há nada para mostrar.
     if (message == null || !mounted) return;
 
     ScaffoldMessenger.of(context)
@@ -89,9 +117,12 @@ class _HomePageState extends State<HomePage> {
         ),
       );
 
+    // Limpa o erro para que a mesma mensagem possa aparecer de novo numa
+    // próxima falha (a reação só dispara quando o valor muda).
     controller.clearError();
   }
 
+  /// Recebe os resultados da busca por endereço.
   void _onSearchResults(List<AddressModel>? results) {
     if (results == null || results.isEmpty) return;
 
@@ -102,6 +133,7 @@ class _HomePageState extends State<HomePage> {
       ..ensureVisualUpdate();
   }
 
+  /// Abre a lista de endereços encontrados para o usuário escolher.
   Future<void> _showSearchResults(List<AddressModel> results) async {
     if (!mounted) return;
 
@@ -113,20 +145,31 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: AppColors.background,
       builder: (sheetContext) => _SearchResultsSheet(
         results: results,
+        // Fecha a lista devolvendo o endereço tocado.
         onSelect: (address) => Navigator.of(sheetContext).pop(address),
       ),
     );
 
     if (selected != null) {
+      // Endereço escolhido vira o último consultado.
       await controller.selectAddress(selected);
     } else {
+      // Lista fechada sem escolha.
       controller.clearSearchResults();
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Ações da tela
+  // ---------------------------------------------------------------------------
+
   /// Ação: nova consulta.
+  ///
+  /// Abre o formulário e, conforme o tipo escolhido, pede ao controller a
+  /// consulta por CEP ou por endereço.
   Future<void> _openSearch() async {
     final request = await SearchAddressComponent.show(context);
+    // Formulário fechado sem consultar.
     if (request == null) return;
 
     if (request.type == SearchType.cep) {
@@ -145,6 +188,7 @@ class _HomePageState extends State<HomePage> {
   /// Ao tocar em um endereço do histórico, ele volta para a home como o
   /// último endereço consultado.
   Future<void> _openHistory() async {
+    // pushNamed devolve o valor passado no Navigator.pop() da outra tela.
     final selected = await Navigator.of(context).pushNamed<AddressModel>(
       AppRoutes.history,
     );
@@ -160,10 +204,14 @@ class _HomePageState extends State<HomePage> {
   /// escolhido abre o trajeto partindo da posição atual do aparelho.
   Future<void> _traceRoute() async {
     final address = controller.lastAddress;
+
+    // 1) Endereço -> latitude/longitude (o controller mostra o loading e
+    //    avisa o erro, se não conseguir).
     final location = await controller.getLastAddressLocation();
     if (address == null || location == null || !mounted) return;
 
     try {
+      // 2) Lista os apps de mapas instalados (Google Maps, Waze...).
       final maps = await MapLauncher.installedMaps;
       if (maps.isEmpty) {
         controller.showError(
@@ -172,9 +220,12 @@ class _HomePageState extends State<HomePage> {
         return;
       }
 
+      // 3) Se houver mais de um, o usuário escolhe qual abrir.
       final map = maps.length == 1 ? maps.first : await _chooseMap(maps);
       if (map == null) return;
 
+      // 4) Abre a rota. Sem informar a origem, o app de mapas parte da
+      //    localização atual do aparelho.
       await map.showDirections(
         destination: Coords(location.latitude, location.longitude),
         destinationTitle: '${address.streetLine} - ${address.formattedCep}',
@@ -185,6 +236,7 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  /// Mostra a lista de apps de mapas para o usuário escolher.
   Future<AvailableMap?> _chooseMap(List<AvailableMap> maps) {
     return showModalBottomSheet<AvailableMap>(
       context: context,
@@ -213,8 +265,14 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // ---------------------------------------------------------------------------
+  // Interface
+  // ---------------------------------------------------------------------------
+
   @override
   Widget build(BuildContext context) {
+    // O Stack coloca o loading por cima da tela inteira (inclusive da barra
+    // superior e do botão flutuante).
     return Stack(
       children: [
         Scaffold(
@@ -227,6 +285,7 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
             actions: [
+              // Ação: acesso ao histórico de consultas.
               IconButton(
                 key: const Key('historyButton'),
                 tooltip: 'Histórico de consultas',
@@ -235,14 +294,18 @@ class _HomePageState extends State<HomePage> {
               ),
             ],
           ),
+          // Ação: nova consulta.
           floatingActionButton: FloatingActionButton.extended(
             key: const Key('newSearchButton'),
             onPressed: _openSearch,
             icon: const Icon(Icons.search),
             label: const Text('Nova consulta'),
           ),
+          // Puxar a tela para baixo recarrega o histórico.
           body: RefreshIndicator(
             onRefresh: controller.loadData,
+            // Observer: redesenha este trecho sempre que algum observável
+            // usado dentro dele mudar (último endereço, histórico, etc.).
             child: Observer(
               builder: (_) => ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -250,6 +313,8 @@ class _HomePageState extends State<HomePage> {
                   AppMetrics.pagePadding,
                   AppMetrics.pagePadding,
                   AppMetrics.pagePadding,
+                  // Espaço extra no fim para o botão flutuante não cobrir
+                  // o último item.
                   AppMetrics.spaceXXXL * 2,
                 ),
                 children: [
@@ -261,6 +326,8 @@ class _HomePageState extends State<HomePage> {
                         : 'Último endereço consultado',
                     icon: Icons.place_outlined,
                   ),
+
+                  // Busca vazia / não encontrado OU o último endereço.
                   if (controller.showEmptySearch)
                     EmptySearchComponent(
                       notFoundMessage: controller.notFoundMessage,
@@ -268,9 +335,13 @@ class _HomePageState extends State<HomePage> {
                     )
                   else
                     LastAddressComponent(
+                      // `!` é seguro aqui: showEmptySearch é falso só quando
+                      // existe um último endereço.
                       address: controller.lastAddress!,
                       onTraceRoute: _traceRoute,
                     ),
+
+                  // Consultas recentes (lista de endereços consultados).
                   if (controller.hasRecentAddresses) ...[
                     const SizedBox(height: AppMetrics.spaceXL),
                     SectionTitleComponent(
@@ -283,6 +354,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                     AddressListComponent(
                       addresses: controller.recentAddresses,
+                      // Tocar numa consulta recente a coloca em destaque.
                       onTap: controller.selectAddress,
                     ),
                   ],
@@ -291,6 +363,9 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
         ),
+
+        // Tela de loading: aparece enquanto o controller indica uma consulta
+        // em andamento.
         Observer(
           builder: (_) => controller.isLoading
               ? LoadingComponent(message: controller.loadingMessage)
@@ -301,6 +376,7 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
+/// Faixa azul de boas-vindas no topo da home.
 class _HomeHeader extends StatelessWidget {
   const _HomeHeader();
 
@@ -360,6 +436,7 @@ class _SearchResultsSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Limita a lista a 75% da altura da tela.
     final maxHeight = MediaQuery.of(context).size.height * 0.75;
 
     return ConstrainedBox(
@@ -391,6 +468,7 @@ class _SearchResultsSheet extends StatelessWidget {
               style: TextStyle(color: AppColors.textSecondary),
             ),
           ),
+          // Flexible deixa a lista rolar dentro do espaço disponível.
           Flexible(
             child: AddressListComponent(
               addresses: results,

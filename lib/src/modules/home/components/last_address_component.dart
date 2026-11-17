@@ -1,3 +1,9 @@
+// =============================================================================
+// Passo 05 do desafio - módulo Home, diretório components:
+// "criar classe para definir componente do último endereço consultado".
+// Resultado esperado: "componente com retorno dos dados consultados".
+// =============================================================================
+
 import 'package:material_ui/material_ui.dart';
 
 import '../../../shared/colors/app_colors.dart';
@@ -13,7 +19,10 @@ class LastAddressComponent extends StatelessWidget {
     required this.onTraceRoute,
   });
 
+  /// Endereço exibido.
   final AddressModel address;
+
+  /// Ação do botão "Traçar rota" (implementada na HomePage).
   final VoidCallback onTraceRoute;
 
   @override
@@ -26,6 +35,7 @@ class LastAddressComponent extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Linha superior: etiqueta com o CEP e data da consulta.
             Row(
               children: [
                 Container(
@@ -59,6 +69,8 @@ class LastAddressComponent extends StatelessWidget {
               ],
             ),
             const SizedBox(height: AppMetrics.spaceL),
+
+            // Logradouro e complemento em destaque.
             Text(
               address.streetLine,
               style: textTheme.titleLarge?.copyWith(
@@ -66,6 +78,8 @@ class LastAddressComponent extends StatelessWidget {
                 fontWeight: FontWeight.w700,
               ),
             ),
+
+            // Bairro (alguns CEPs não têm).
             if (address.bairro.isNotEmpty) ...[
               const SizedBox(height: AppMetrics.spaceXS),
               Text(
@@ -76,6 +90,8 @@ class LastAddressComponent extends StatelessWidget {
               ),
             ],
             const SizedBox(height: AppMetrics.spaceXS),
+
+            // Cidade - UF (e o nome do estado, quando a API informa).
             Text(
               address.estado.isEmpty
                   ? address.cityLine
@@ -85,6 +101,8 @@ class LastAddressComponent extends StatelessWidget {
               ),
             ),
             const SizedBox(height: AppMetrics.spaceL),
+
+            // Informações extras da ViaCEP em pequenas etiquetas.
             Wrap(
               spacing: AppMetrics.spaceS,
               runSpacing: AppMetrics.spaceS,
@@ -98,6 +116,8 @@ class LastAddressComponent extends StatelessWidget {
               ],
             ),
             const SizedBox(height: AppMetrics.spaceL),
+
+            // Ação: traçar a rota da localização atual até este endereço.
             FilledButton.icon(
               onPressed: onTraceRoute,
               icon: const Icon(Icons.directions),
@@ -110,6 +130,7 @@ class LastAddressComponent extends StatelessWidget {
   }
 }
 
+/// Etiqueta "rótulo valor", por exemplo "DDD 11".
 class _InfoChip extends StatelessWidget {
   const _InfoChip({required this.label, required this.value});
 
@@ -130,6 +151,8 @@ class _InfoChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppMetrics.radiusS),
         border: Border.all(color: AppColors.divider),
       ),
+      // Text.rich permite estilos diferentes no mesmo texto: o rótulo em
+      // cinza e o valor em negrito.
       child: Text.rich(
         TextSpan(
           children: [

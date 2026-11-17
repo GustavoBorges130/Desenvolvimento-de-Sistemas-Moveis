@@ -1,3 +1,7 @@
+// Testes das regras de negócio do AddressService: validação do CEP e da
+// busca por endereço, consultas recorrentes lidas do armazenamento local e
+// conversão do endereço em coordenadas para a rota.
+
 import 'package:fast_location/src/modules/home/model/address_exceptions.dart';
 import 'package:fast_location/src/modules/home/service/address_service.dart';
 import 'package:flutter_test/flutter_test.dart';

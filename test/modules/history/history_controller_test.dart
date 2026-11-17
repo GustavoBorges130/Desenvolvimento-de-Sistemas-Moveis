@@ -1,3 +1,6 @@
+// Testes do HistoryController (MobX): carregar e limpar o histórico do
+// armazenamento local.
+
 import 'package:fast_location/src/modules/history/controller/history_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
 
