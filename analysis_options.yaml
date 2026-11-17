@@ -14,6 +14,8 @@ analyzer:
     - build/**
     - android/**
     - ios/**
+    # Arquivos gerados pelo build_runner (MobX e Hive).
+    - "**/*.g.dart"
 
 linter:
   # The lint rules applied to this project can be customized in the
@@ -27,8 +29,13 @@ linter:
   # `// ignore_for_file: name_of_lint` syntax on the line or in the file
   # producing the lint.
   rules:
-    # avoid_print: false  # Uncomment to disable the `avoid_print` rule
-    # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
+    # O hive_generator ^2.0.0 (exigido no desafio) só funciona com o
+    # analyzer 6.x, que não entende a sintaxe de "null-aware elements"
+    # (`?widget` dentro de listas) do Dart 3.8+. Se o código usar essa
+    # sintaxe, o build_runner deixa de gerar os arquivos .g.dart; por isso
+    # a sugestão do lint fica desligada.
+    use_null_aware_elements: false
+    prefer_single_quotes: true
 
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options

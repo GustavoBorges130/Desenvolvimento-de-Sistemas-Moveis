@@ -35,7 +35,7 @@ class SectionTitleComponent extends StatelessWidget {
                   ),
             ),
           ),
-          ?trailing,
+          if (trailing != null) trailing!,
         ],
       ),
     );
